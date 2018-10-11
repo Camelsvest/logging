@@ -41,7 +41,7 @@ void bipbuf_free(bipbuf_t *me);
  * Returns:
  * unsigned char*         pointer to the reserved block
  */
-unsigned char* bipbuf_reserve(bipbuf_t *me, int size, int& reserved);
+unsigned char* bipbuf_reserve(bipbuf_t *me, int size, int* reserved);
 
 /*
  * bipbuf_commit
@@ -71,7 +71,7 @@ void bipbuf_commit(bipbuf_t *me, int size);
  * Returns:
  *   unsigned char*                    pointer to the first contiguous block, or NULL if empty.
  */
-unsigned char* bipbuf_get_contiguous_block(bipbuf *me, int& size)
+unsigned char* bipbuf_get_contiguous_block(bipbuf_t *me, int* size)
 
 
 /*
@@ -85,7 +85,7 @@ unsigned char* bipbuf_get_contiguous_block(bipbuf *me, int& size)
  * Returns:
  *   nothing
  */
-void bipbuf_decommit_block(bipbuf_t *me, int size)
+void bipbuf_decommit_block(bipbuf_t *me, int size);
 
 
 /*
@@ -99,6 +99,6 @@ void bipbuf_decommit_block(bipbuf_t *me, int size)
  * Returns:
  *   int                    total amount of committed data in the buffer
  */
-int bipbuf_get_committed_size(bipbuf_t *me) const;
+int bipbuf_get_committed_size(bipbuf_t *me);
 
 #endif /* _BIPBUFFER_H_ */

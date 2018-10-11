@@ -96,7 +96,7 @@ void bipbuf_free(bipbuf_t *me)
 }
 
 
-unsigned char* reserve(bipbuf_t *me, int size, int& reserved)
+unsigned char* bipbuf_reserve(bipbuf_t *me, int size, int* reserved)
 {
 	int freespace;
 
@@ -112,7 +112,7 @@ unsigned char* reserve(bipbuf_t *me, int size, int& reserved)
 		return NULL;
 
             me->szResrv = freespace;
-            reserved = freespace;
+            *reserved = freespace;
             me->ixResrv = me->ixb + me->szb;
             return me->buffer + me->ixResrv;
         }
@@ -131,7 +131,7 @@ unsigned char* reserve(bipbuf_t *me, int size, int& reserved)
 			freespace = size;
 
                 me->szResrv = freespace;
-                reserved = freespace;
+                *reserved = freespace;
                 me->ixResrv = ixa + sza;
 
                 return me->buffer + me->ixResrv;
@@ -145,7 +145,7 @@ unsigned char* reserve(bipbuf_t *me, int size, int& reserved)
 			size = me->ixa;
 
                 me->szResrv = size;
-                reserved = size;
+                *reserved = size;
                 me->ixResrv = 0;
 
 		// actually me->ixb shall be alwayse 0, so we don't set
@@ -198,15 +198,15 @@ void bipbuf_commit(bipbuf_t *me, int size)
 }
 
 
-unsigned char* bipbuf_get_contiguous_block(bipbuf_t *me, int& size)
+unsigned char* bipbuf_get_contiguous_block(bipbuf_t *me, int* size)
 {
 	if (me->sza == 0)
 	{
-	    size = 0;
+	    *size = 0;
 	    return NULL;
 	}
 
-	size = me->sza;
+	*size = me->sza;
 	return buffer + ixa;
 }
 
