@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
 #include <assert.h>
+#include <errno.h>
 #include <pthread.h>
 
 #include "logging.h"
@@ -55,7 +58,7 @@ static void * thread_proc(void *arg)
 			pthread_cond_wait(ctx->cond, ctx->mutex);
 
 			bytes = 0;
-			buf = bipbuf_get_contiguous_block(ctx->buffer, bytes);
+			buf = bipbuf_get_contiguous_block(ctx->buf, &bytes);
 			if (buf && bytes > 0) 
 			{
 				ch = *(buf + bytes);	// backup
@@ -64,7 +67,7 @@ static void * thread_proc(void *arg)
 				fprintf(stdout, "%s", buf);
 
 				*(buf + bytes) = ch; // restore
-				bipbuf_decommit_block(ctx->buffer, bytes);
+				bipbuf_decommit_block(ctx->buf, bytes);
 			}
 
 		}
@@ -89,7 +92,7 @@ int logging_init(const char *filename)
 	logging_ctx = (logging_ctx_t *)calloc(1, sizeof(logging_ctx_t));
 	if (logging_ctx != NULL)
 	{
-		logging_ctx->verbos_level = LOGGING_VERBOS;
+		logging_ctx->verbose_level = LOGGING_VERBOS;
 
 		logging_ctx->buf = bipbuf_new(LOG_MAX_BUFSIZE);
 		logging_ctx->mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));			
@@ -177,7 +180,7 @@ void logging_uninit()
 }
 
 
-void logging_set_verbos_level(verbos_level_t level)
+void logging_set_verbose_level(verbose_level_t level)
 {
 	if (logging_ctx != NULL && logging_ctx->mutex != NULL)
 	{
@@ -187,7 +190,8 @@ void logging_set_verbos_level(verbos_level_t level)
 	}
 }
 
-static int logging_print(verbos_level_t level, const char *format, va_list args)
+
+static int logging_print(verbose_level_t level, const char *format, va_list args)
 {
 	int size = -1;
 	char *buffer = NULL;
@@ -197,7 +201,7 @@ static int logging_print(verbos_level_t level, const char *format, va_list args)
 		pthread_mutex_lock(logging_ctx->mutex);
 		if (logging_ctx->verbose_level >= level)
 		{
-			buffer = bipbuf_reserve(logging_ctx->buf, LOG_MAX_LINESIZE, size);
+			buffer = (char *)bipbuf_reserve(logging_ctx->buf, LOG_MAX_LINESIZE, &size);
 			if (buffer != NULL && size > 0)
 			{
 				size = vsnprintf(buffer, size, format, args);
@@ -224,6 +228,19 @@ static int logging_print(verbos_level_t level, const char *format, va_list args)
 }
 
 
+static int logging_vsprint(verbose_level_t level, const char *format, ...)
+{
+	int ret;
+	va_list args;
+
+	va_start(args, format);
+	ret = logging_print(level, format, args);
+	va_end(args);
+
+	return ret;
+}
+
+
 int logging_verbos(const char *format, ...)
 {
 	int ret;
@@ -231,7 +248,7 @@ int logging_verbos(const char *format, ...)
  
 	va_start(args, format);
 	ret = logging_print(LOGGING_VERBOS, format, args);
-	va_end(args);	
+	va_end(args);
 
 	return ret;
 }
@@ -289,7 +306,7 @@ int logging_error(const char *format, ...)
 }
 
 
-static int logging_dump(verbose_level_t level, const char *buffer, int size)
+static int logging_dump(verbose_level_t level, unsigned char *buffer, int size)
 {
 	int           i;      // used to keep track of line lengths
 	unsigned char *line;  // used to print char version of data
@@ -311,7 +328,7 @@ static int logging_dump(verbose_level_t level, const char *buffer, int size)
 			i = 0; 
 			line = buffer; 
 
-			ret = string_buf_vsnprintf(stringbuf, "%08X | ", (int)buffer);
+			ret = string_buf_vsnprintf(stringbuf, "%08X | ", (unsigned int)buffer);
 			length += ret;
 
 			while (size-- > 0)
@@ -350,7 +367,7 @@ static int logging_dump(verbose_level_t level, const char *buffer, int size)
 					// If we are not on the last line, prefix the next line with the address.
 					if (size > 0)
 					{
-						logging_print(level, "%s", stringbuf->buf);
+						logging_vsprint(level, "%s", stringbuf->buf);
 						stringbuf->pos = 0;	// reset
 
 						ret = string_buf_vsnprintf(stringbuf, "\n%08X | ", (int)buffer);
@@ -365,7 +382,7 @@ static int logging_dump(verbose_level_t level, const char *buffer, int size)
 			length += ret;
 		}
 
-		logging_print(level, "%s", stringbuf->buf);
+		logging_vsprint(level, "%s", stringbuf->buf);
 
 		string_buf_delete(stringbuf);
 	}
@@ -376,29 +393,29 @@ static int logging_dump(verbose_level_t level, const char *buffer, int size)
 
 int logging_verbos_dump(char *buf, int size)
 {
-	logging_dump(LOGGING_VERBOS, buf, size);
+	return logging_dump(LOGGING_VERBOS, (unsigned char *)buf, size);
 }
 
 
 int logging_debug_dump(char *buf, int size)
 {
-	logging_dump(LOGGING_DEBUG, buf, size);
+	return logging_dump(LOGGING_DEBUG, (unsigned char *)buf, size);
 }
 
 
 int logging_trace_dump(char *buf, int size)
 {
-	logging_dump(LOGGING_TRACE, buf, size);
+	return logging_dump(LOGGING_TRACE, (unsigned char *)buf, size);
 }
 
 
 int logging_warning_dump(char *buf, int size)
 {
-	logging_dump(LOGGING_WARNING, buf, size);
+	return logging_dump(LOGGING_WARNING, (unsigned char *)buf, size);
 }
 
 
 int logging_error_dump(char *buf, int size)
 {
-	logging_dump(LOGGING_ERROR, buf, size);
+	return logging_dump(LOGGING_ERROR, (unsigned char *)buf, size);
 }

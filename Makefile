@@ -18,7 +18,7 @@ LIBS    :=
 LDFLAGS :=
 DEFINES :=
 INCLUDE := -I.
-CFLAGS  := -g -Wall -O3 $(DEFINES) $(INCLUDE)
+CFLAGS  := -g -Wall -Wno-pointer-to-int-cast -O3 $(DEFINES) $(INCLUDE)
 CXXFLAGS:= $(CFLAGS) -DHAVE_CONFIG_H
   
 #i think you should do anything here
@@ -36,7 +36,7 @@ all : $(TARGET)
 objs : $(OBJS)
 
 %.o : %.c
-	$(CC) -c $< $(CCFLAGS)
+	$(CC) -c $< $(CFLAGS)
   
 rebuild: clean all
                 
@@ -45,4 +45,4 @@ clean :
 	rm -fr $(TARGET)
   
 $(TARGET) : $(OBJS)
-	$(AR) rv $@ $?
+	$(AR) rsv $@ $?

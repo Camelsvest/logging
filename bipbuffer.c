@@ -43,9 +43,14 @@ static BOOL bipbuf_init(bipbuf_t *me, const unsigned int size)
  * +---------------------------------------------------------------------------+
  *                              ixa      sza               
  */
-static int bipbuf_get_space_aftera() const
+static int bipbuf_get_space_aftera(bipbuf_t *me)
 {
-	return buflen - ixa - sza;
+	if (me != NULL)
+	{
+		return me->buflen - me->ixa - me->sza;
+	}
+	else
+		return -1;
 }
 
 
@@ -56,9 +61,14 @@ static int bipbuf_get_space_aftera() const
  * +---------------------------------------------------------------------------+
  *                              ixb      szb               ixa
  */
-static int bipbuf_get_space_afterb() const
+static int bipbuf_get_space_afterb(bipbuf_t *me)
 {
-	return ixa - ixb - szb;
+	if (me != NULL)
+	{
+		return me->ixa - me->ixb - me->szb;
+	}
+	else
+		return -1;
 }
 
 
@@ -68,13 +78,13 @@ bipbuf_t *bipbuf_new(const unsigned int size)
 
 	if (size > 0)
 	{
-		me = (bipbuf_t *)malloc(1, sizeof(bipbuf_t));
+		me = (bipbuf_t *)calloc(1, sizeof(bipbuf_t));
 		if (me)
 		{
 			if (IS_FALSE(bipbuf_init(me, size)))
 			{
 				free(me);
-				me == NULL;
+				me = NULL;
 			}
 		}
 	}
@@ -103,7 +113,7 @@ unsigned char* bipbuf_reserve(bipbuf_t *me, int size, int* reserved)
         // We always allocate on B if B exists; this means we have two blocks and our buffer is filling.
         if (me->szb)
         {
-            freespace = bipbuf_get_freespace_afterb();
+            freespace = bipbuf_get_space_afterb(me);
 
             if (size < freespace)
 		freespace = size;
@@ -121,7 +131,7 @@ unsigned char* bipbuf_reserve(bipbuf_t *me, int size, int* reserved)
             // Block b does not exist, so we can check if the space AFTER a is bigger than the space
             // before A, and allocate the bigger one.
 
-            freespace = bipbuf_get_space_aftera();
+            freespace = bipbuf_get_space_aftera(me);
             if (freespace >= me->ixa)
             {
                 if (freespace == 0)
@@ -132,7 +142,7 @@ unsigned char* bipbuf_reserve(bipbuf_t *me, int size, int* reserved)
 
                 me->szResrv = freespace;
                 *reserved = freespace;
-                me->ixResrv = ixa + sza;
+                me->ixResrv = me->ixa + me->sza;
 
                 return me->buffer + me->ixResrv;
             }
@@ -167,7 +177,7 @@ void bipbuf_commit(bipbuf_t *me, int size)
 
 	// If we try to commit more space than we asked for, clip to the size we asked for.
 
-	if (size > szResrv)
+	if (size > me->szResrv)
 	{
 		size = me->szResrv;
 	}
@@ -207,7 +217,7 @@ unsigned char* bipbuf_get_contiguous_block(bipbuf_t *me, int* size)
 	}
 
 	*size = me->sza;
-	return buffer + ixa;
+	return me->buffer + me->ixa;
 }
 
 
@@ -236,7 +246,7 @@ void bipbuf_decommit_block(bipbuf_t *me, int size)
 		assert(0);	// bug
 }
 
-int bipbuf_get_committed_size(bipbuf_t *me) const
+int bipbuf_get_committed_size(bipbuf_t *me)
 {
 	return me->sza + me->szb;
 }

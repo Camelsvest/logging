@@ -11,8 +11,8 @@ typedef enum {
 	LOGGING_TRACE,
 	LOGGING_WARNING,
 	LOGGING_ERROR
-} verbos_level_t;
-void logging_set_verbos_level(verbos_level_t level);
+} verbose_level_t;
+void logging_set_verbose_level(verbose_level_t level);
 
 int logging_verbos(const char *format, ...);
 int logging_debug(const char *format, ...);

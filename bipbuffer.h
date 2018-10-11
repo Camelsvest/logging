@@ -71,7 +71,7 @@ void bipbuf_commit(bipbuf_t *me, int size);
  * Returns:
  *   unsigned char*                    pointer to the first contiguous block, or NULL if empty.
  */
-unsigned char* bipbuf_get_contiguous_block(bipbuf_t *me, int* size)
+unsigned char* bipbuf_get_contiguous_block(bipbuf_t *me, int* size);
 
 
 /*
