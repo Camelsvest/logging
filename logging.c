@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <assert.h>
 #include <errno.h>
 #include <pthread.h>
@@ -14,7 +17,7 @@
 #define FALSE 0
 #define BOOL int
 
-#define LOG_MAX_BUFSIZE	300
+#define LOG_MAX_BUFSIZE	2048
 #define LOG_MAX_LINESIZE 256
 
 typedef struct logging_context
@@ -45,7 +48,7 @@ static void * thread_proc(void *arg)
 	if (ctx != NULL && ctx->buf != NULL)
 	{
 		pthread_mutex_lock(ctx->mutex);
-		fprintf(stdout, "\r\n*** Logging thread start to run. ***\r\n\r\n");
+		fprintf(ctx->logging_file, "\n*** Logging thread start to run. ***\n\n");
 		while (ctx->running)
 		{
 //			clock_gettime(CLOCK_REALTIME, &abs);
@@ -65,7 +68,7 @@ static void * thread_proc(void *arg)
 				ch = *(buf + bytes);	// backup
 				*(buf + bytes) = '\0';
 
-				fprintf(stdout, "%s", buf);
+				fprintf(ctx->logging_file, "%s", buf);
 
 				*(buf + bytes) = ch; // restore
 				bipbuf_decommit_block(ctx->buf, bytes);
@@ -73,7 +76,7 @@ static void * thread_proc(void *arg)
 
 		}
 
-		fprintf(stdout, "\r\n\r\n*** Logging thread stop running. ***\r\n");
+		fprintf(ctx->logging_file, "\n\n*** Logging thread stop running. ***\n");
 
 		pthread_mutex_unlock(ctx->mutex);
 
@@ -85,6 +88,7 @@ static void * thread_proc(void *arg)
 
 int logging_init(const char *filename)
 {
+	struct stat fdstat;
 	BOOL OK = TRUE;
 	
 	if (logging_ctx != NULL)
@@ -116,6 +120,12 @@ int logging_init(const char *filename)
 					OK = FALSE;
 				}
 			}
+			else
+			{
+				logging_ctx->logging_file = stdout;
+			}
+			fstat(fileno(logging_ctx->logging_file), &fdstat);
+			fprintf(stdout, "logging file: st_blksize=%d, st_blocks=%d\n", (int)fdstat.st_blksize, (int)fdstat.st_blocks);
 
 			if (OK == TRUE)
 			{
@@ -444,7 +454,7 @@ int main(int argc, char *argv[])
 	char buf[80];
 	int ret, bytes = -1;
 
-	if (argc != 2)
+	if (argc < 2)
 	{
 		help(argv[0]);
 		return -1;
@@ -457,7 +467,12 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	logging_init("");
+	if (argc >= 3)
+	{
+		logging_init(argv[2]);
+	}
+	else
+		logging_init("");
 
 	bytes = fread(buf, 1, sizeof(buf) - 1, fp);
 	while (bytes > 0)
