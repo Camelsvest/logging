@@ -14,7 +14,7 @@
 #define FALSE 0
 #define BOOL int
 
-#define LOG_MAX_BUFSIZE	4096
+#define LOG_MAX_BUFSIZE	300
 #define LOG_MAX_LINESIZE 256
 
 typedef struct logging_context
@@ -45,6 +45,7 @@ static void * thread_proc(void *arg)
 	if (ctx != NULL && ctx->buf != NULL)
 	{
 		pthread_mutex_lock(ctx->mutex);
+		fprintf(stdout, "\r\n*** Logging thread start to run. ***\r\n\r\n");
 		while (ctx->running)
 		{
 //			clock_gettime(CLOCK_REALTIME, &abs);
@@ -71,6 +72,9 @@ static void * thread_proc(void *arg)
 			}
 
 		}
+
+		fprintf(stdout, "\r\n\r\n*** Logging thread stop running. ***\r\n");
+
 		pthread_mutex_unlock(ctx->mutex);
 
 	}
@@ -199,7 +203,7 @@ static int logging_print(verbose_level_t level, const char *format, va_list args
 	if (logging_ctx != NULL && logging_ctx->mutex != NULL)
 	{
 		pthread_mutex_lock(logging_ctx->mutex);
-		if (logging_ctx->verbose_level >= level)
+		if (logging_ctx->verbose_level <= level)
 		{
 			buffer = (char *)bipbuf_reserve(logging_ctx->buf, LOG_MAX_LINESIZE, &size);
 			if (buffer != NULL && size > 0)
@@ -419,3 +423,57 @@ int logging_error_dump(char *buf, int size)
 {
 	return logging_dump(LOGGING_ERROR, (unsigned char *)buf, size);
 }
+
+
+#ifdef LOGGING_TEST_ENABLE
+
+void help(char *filename)
+{
+	printf("Usage:\r\n");
+	printf("%s [Filename].\r\n", filename);
+	printf("\t -- Printf a TEXT file via background logging thread.\r\n");
+	printf("\t -- You must specify a text file as parameter.\r\n");
+	printf("\r\n");
+}
+
+#include <unistd.h>
+
+int main(int argc, char *argv[])
+{
+	FILE *fp;
+	char buf[80];
+	int ret, bytes = -1;
+
+	if (argc != 2)
+	{
+		help(argv[0]);
+		return -1;
+	}
+
+	fp = fopen(argv[1], "r");
+	if (fp == NULL)
+	{
+		printf("Failed to open file: %s.\r\n", argv[1]);
+		return -1;
+	}
+
+	logging_init("");
+
+	bytes = fread(buf, 1, sizeof(buf) - 1, fp);
+	while (bytes > 0)
+	{
+		buf[bytes] = '\0';
+		ret = logging_trace("%s", buf);
+		assert(ret == bytes);
+
+		bytes = fread(buf, 1, sizeof(buf) - 1, fp);
+
+		usleep(1000);
+	}
+//	logging_trace("\r\nFile end. bytes = %d.\r\n", bytes);
+
+	logging_uninit();
+	return 0;
+}
+
+#endif

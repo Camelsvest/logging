@@ -9,16 +9,18 @@
 #target you can change test to what you want
 #.......lib*.so
 TARGET  := liblogging.a
-  
+TEST	:= logging_test
+
 #compile and lib parameter
 #....
 CC      := gcc
 AR	:= ar
 LIBS    :=
-LDFLAGS :=
-DEFINES :=
+LDFLAGS := -pthread
+
+DEFINES := -DLOGGING_TEST_ENABLE
 INCLUDE := -I.
-CFLAGS  := -g -Wall -Wno-pointer-to-int-cast -O3 $(DEFINES) $(INCLUDE)
+CFLAGS  := -g -Wall -Wno-pointer-to-int-cast -pthread $(DEFINES) $(INCLUDE)
 CXXFLAGS:= $(CFLAGS) -DHAVE_CONFIG_H
   
 #i think you should do anything here
@@ -31,7 +33,7 @@ OBJS    := $(patsubst %.c, %.o, $(SOURCE))
   
 .PHONY : all objs clean rebuild
   
-all : $(TARGET)
+all : $(TARGET) $(TEST)
   
 objs : $(OBJS)
 
@@ -41,8 +43,11 @@ objs : $(OBJS)
 rebuild: clean all
                 
 clean :
-	rm -fr *.o
-	rm -fr $(TARGET)
+	@rm -fr *.o
+	@rm -fr $(TARGET) $(TEST)
   
 $(TARGET) : $(OBJS)
-	$(AR) rsv $@ $?
+	$(AR) rsv $@ $(OBJS)
+
+$(TEST) : $(TARGET)
+	$(CC) -o $@ $? $(LDFLAGS) 
