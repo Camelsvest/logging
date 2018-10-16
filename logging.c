@@ -17,7 +17,7 @@
 #define FALSE 0
 #define BOOL int
 
-#define LOG_MAX_BUFSIZE	2048
+#define LOG_MAX_BUFSIZE	16384
 #define LOG_MAX_LINESIZE 256
 
 typedef struct logging_context
@@ -118,6 +118,10 @@ int logging_init(const char *filename)
 				{
 					fprintf(stderr, "Failed to open log file:%s, errno = %d\r\n", filename, errno);
 					OK = FALSE;
+				}
+				else
+				{
+					setlinebuf(logging_ctx->logging_file);
 				}
 			}
 			else
