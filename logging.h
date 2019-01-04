@@ -1,8 +1,8 @@
 #ifndef _LOGGING_H_
 #define _LOGGING_H_
 
-int	logging_init(const char *filename);
-void	logging_uninit();
+int     logging_init(const char *filename);
+void    logging_uninit();
 
 
 typedef enum {

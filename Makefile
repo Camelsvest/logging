@@ -18,7 +18,7 @@ AR	:= ar
 LIBS    :=
 LDFLAGS := -pthread
 
-DEFINES := -DLOGGING_TEST_ENABLE
+DEFINES := 
 INCLUDE := -I.
 CFLAGS  := -g -Wall -Wno-pointer-to-int-cast -pthread $(DEFINES) $(INCLUDE)
 CXXFLAGS:= $(CFLAGS) -DHAVE_CONFIG_H
@@ -33,12 +33,12 @@ OBJS    := $(patsubst %.c, %.o, $(SOURCE))
   
 .PHONY : all objs clean rebuild
   
-all : $(TARGET) $(TEST)
+all : $(TARGET)
   
 objs : $(OBJS)
 
 %.o : %.c
-	$(CC) -c $< $(CFLAGS)
+	$(CC) $(CFLAGS) -c $<
   
 rebuild: clean all
                 
