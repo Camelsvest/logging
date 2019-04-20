@@ -1,6 +1,10 @@
 #ifndef _LOGGING_H_
 #define _LOGGING_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int     logging_init(const char *filename);
 void    logging_uninit();
 
@@ -26,5 +30,8 @@ int logging_trace_dump(char *buf, int size);
 int logging_warning_dump(char *buf, int size);
 int logging_error_dump(char *buf, int size);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
