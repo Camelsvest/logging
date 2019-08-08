@@ -1,6 +1,22 @@
 #ifndef _LOGGING_H_
 #define _LOGGING_H_
 
+#include <string.h>
+
+#ifdef __WIN32_WINNT
+    #define FILENAME(x) (strrchr(x,'\\')?strrchr(x,'\\')+1:x)
+#else
+    #define FILENAME(x) (strrchr(x,'/')?strrchr(x,'/')+1:x)
+#endif
+
+#define __FILENAME__     (FILENAME(__FILE__))
+
+#define ENTER_CLASS_FUNCTION(class_name) logging_verbos("%s:%u Enter %s->%s\r\n", __FILENAME__, __LINE__, class_name, __FUNCTION__)
+#define EXIT_CLASS_FUNCTION(class_name)  logging_verbos("%s:%u Exit %s->%s\r\n", __FILENAME__, __LINE__, class_name, __FUNCTION__)
+
+#define ENTER_FUNCTION  logging_verbos("%s:%u Enter %s\r\n", __FILENAME__, __LINE__, __FUNCTION__)
+#define EXIT_FUNCTION   logging_verbos("%s:%u Exit %s\r\n", __FILENAME__, __LINE__, __FUNCTION__);
+
 #ifdef __cplusplus
 extern "C" {
 #endif
