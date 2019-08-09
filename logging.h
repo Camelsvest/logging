@@ -11,11 +11,11 @@
 
 #define __FILENAME__     (FILENAME(__FILE__))
 
-#define ENTER_CLASS_FUNCTION(class_name) logging_verbos("%s:%u Enter %s->%s\r\n", __FILENAME__, __LINE__, class_name, __FUNCTION__)
-#define EXIT_CLASS_FUNCTION(class_name)  logging_verbos("%s:%u Exit %s->%s\r\n", __FILENAME__, __LINE__, class_name, __FUNCTION__)
+#define ENTER_CLASS_FUNCTION(class_name) logging_verbos("%s:%u\t Enter %s->%s\r\n", __FILENAME__, __LINE__, class_name, __FUNCTION__)
+#define EXIT_CLASS_FUNCTION(class_name)  logging_verbos("%s:%u\t Exit %s->%s\r\n", __FILENAME__, __LINE__, class_name, __FUNCTION__)
 
-#define ENTER_FUNCTION  logging_verbos("%s:%u Enter %s\r\n", __FILENAME__, __LINE__, __FUNCTION__)
-#define EXIT_FUNCTION   logging_verbos("%s:%u Exit %s\r\n", __FILENAME__, __LINE__, __FUNCTION__);
+#define ENTER_FUNCTION  logging_verbos("%s:%u\t Enter %s\r\n", __FILENAME__, __LINE__, __FUNCTION__)
+#define EXIT_FUNCTION   logging_verbos("%s:%u\t Exit %s\r\n", __FILENAME__, __LINE__, __FUNCTION__);
 
 #ifdef __cplusplus
 extern "C" {
