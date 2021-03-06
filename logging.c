@@ -208,8 +208,7 @@ void logging_set_verbose_level(verbose_level_t level)
 	}
 }
 
-
-static int logging_print(verbose_level_t level, const char *format, va_list args)
+static int logging_vsprint(verbose_level_t level, const char *format, va_list args)
 {
 	int size = -1;
 	char *buffer = NULL;
@@ -245,86 +244,19 @@ static int logging_print(verbose_level_t level, const char *format, va_list args
 	return size;
 }
 
-
-static int logging_vsprint(verbose_level_t level, const char *format, ...)
+int logging(verbose_level_t level, const char *format, ...)
 {
 	int ret;
 	va_list args;
 
 	va_start(args, format);
-	ret = logging_print(level, format, args);
+	ret = logging_vsprint(level, format, args);
 	va_end(args);
-
+  
 	return ret;
 }
 
-
-int logging_verbos(const char *format, ...)
-{
-	int ret;
-	va_list args;
- 
-	va_start(args, format);
-	ret = logging_print(LOGGING_VERBOS, format, args);
-	va_end(args);
-
-	return ret;
-}
-
-
-int logging_debug(const char *format, ...)
-{
-	int ret;
-	va_list args;
- 
-	va_start(args, format);
-	ret = logging_print(LOGGING_DEBUG, format, args);
-	va_end(args);	
-
-	return ret;
-}
-
-
-int logging_trace(const char *format, ...)
-{
-	int ret;
-	va_list args;
- 
-	va_start(args, format);
-	ret = logging_print(LOGGING_TRACE, format, args);
-	va_end(args);	
-
-	return ret;
-}
-
-
-int logging_warning(const char *format, ...)
-{
-	int ret;
-	va_list args;
- 
-	va_start(args, format);
-	ret = logging_print(LOGGING_WARNING, format, args);
-	va_end(args);	
-
-	return ret;
-}
-
-
-int logging_error(const char *format, ...)
-{
-	int ret;
-	va_list args;
- 
-	va_start(args, format);
-	ret = logging_print(LOGGING_ERROR, format, args);
-	va_end(args);	
-
-	return ret;
-}
-
-
-static int logging_dump(verbose_level_t level, unsigned char *buffer, int size)
+int dump(verbose_level_t level, unsigned char *buffer, int size)
 {
 	int           i;      // used to keep track of line lengths
 	unsigned char *line;  // used to print char version of data
@@ -377,7 +309,7 @@ static int logging_dump(verbose_level_t level, unsigned char *buffer, int size)
 					while (line < buffer) // print the character version
 					{  
 						ch = *line++;
-						ret = string_buf_vsnprintf(stringbuf, "%c", (ch < 33 || ch == 255) ? 0x2E : ch);
+						ret = string_buf_vsnprintf(stringbuf, "%c", (ch < 33 || ch > 126) ? 0x2E : ch);
 						assert(ret > 0);
 						length += ret;
 					}
@@ -385,7 +317,7 @@ static int logging_dump(verbose_level_t level, unsigned char *buffer, int size)
 					// If we are not on the last line, prefix the next line with the address.
 					if (size > 0)
 					{
-						logging_vsprint(level, "%s", stringbuf->buf);
+						logging(level, "%s", stringbuf->buf);
 						stringbuf->pos = 0;	// reset
 
 						ret = string_buf_vsnprintf(stringbuf, "\n%08X | ", (int)buffer);
@@ -400,41 +332,10 @@ static int logging_dump(verbose_level_t level, unsigned char *buffer, int size)
 			length += ret;
 		}
 
-		logging_vsprint(level, "%s", stringbuf->buf);
+		logging(level, "%s", stringbuf->buf);
 
 		string_buf_delete(stringbuf);
 	}
 
 	return length;	
 }
-
-
-int logging_verbos_dump(char *buf, int size)
-{
-	return logging_dump(LOGGING_VERBOS, (unsigned char *)buf, size);
-}
-
-
-int logging_debug_dump(char *buf, int size)
-{
-	return logging_dump(LOGGING_DEBUG, (unsigned char *)buf, size);
-}
-
-
-int logging_trace_dump(char *buf, int size)
-{
-	return logging_dump(LOGGING_TRACE, (unsigned char *)buf, size);
-}
-
-
-int logging_warning_dump(char *buf, int size)
-{
-	return logging_dump(LOGGING_WARNING, (unsigned char *)buf, size);
-}
-
-
-int logging_error_dump(char *buf, int size)
-{
-	return logging_dump(LOGGING_ERROR, (unsigned char *)buf, size);
-}
-
