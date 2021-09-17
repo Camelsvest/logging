@@ -1,6 +1,23 @@
 #ifndef _LOGGING_H_
 #define _LOGGING_H_
 
+#include <string.h>
+#ifdef __WIN32_WINNT
+    #define FILENAME(x) (strrchr(x,'\\')?strrchr(x,'\\')+1:x)
+#else
+    #define FILENAME(x) (strrchr(x,'/')?strrchr(x,'/')+1:x)
+#endif
+
+#define __FILENAME__     (FILENAME(__FILE__))
+
+#define ENTER_CLASS_FUNCTION(class_name) LOGV("%s:%u\t Enter %s->%s\r\n", __FILENAME__, __LINE__, class_name, __FUNCTION__)
+#define EXIT_CLASS_FUNCTION(class_name)  LOGV("%s:%u\t Exit %s->%s\r\n", __FILENAME__, __LINE__, class_name, __FUNCTION__)
+
+#define ENTER_FUNCTION  LOGV("%s:%u\t Enter %s\r\n", __FILENAME__, __LINE__, __FUNCTION__)
+#define EXIT_FUNCTION   LOGV("%s:%u\t Exit %s\r\n", __FILENAME__, __LINE__, __FUNCTION__)
+#ifdef __cplusplus
+extern "C" {
+#endif
 int     logging_init(const char *filename);
 void    logging_uninit();
 
@@ -41,5 +58,9 @@ int dump(verbose_level_t level, unsigned char *buf, int size);
 #define logging_trace_dump(buf, size)		dump(LOGGING_TRACE, buf, size)
 #define logging_warning_dump(buf, size)		dump(LOGGING_WARNING, buf, size)
 #define logging_error_dump(buf, size)		dump(LOGGING_ERROR, buf, size)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
