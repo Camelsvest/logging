@@ -4,10 +4,12 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <assert.h>
 #include <errno.h>
 #include <pthread.h>
+#include <stdbool.h>
 
 #include "logging.h"
 #include "bipbuffer.h"
@@ -23,7 +25,9 @@
 typedef struct logging_context
 {
 	FILE	*logging_file;
-	int	verbose_level;
+    bool    close_file;
+
+	int	    verbose_level;
 	
 	pthread_t	thread_id;
 	pthread_mutex_t	*mutex;
@@ -122,11 +126,13 @@ int logging_init(const char *filename)
 				else
 				{
 					setlinebuf(logging_ctx->logging_file);
+                    logging_ctx->close_file = true;
 				}
 			}
 			else
-			{
+			{            
 				logging_ctx->logging_file = stdout;
+                logging_ctx->close_file = false;
 			}
 			fstat(fileno(logging_ctx->logging_file), &fdstat);
 			fprintf(stdout, "logging file: st_blksize=%d, st_blocks=%d\n", (int)fdstat.st_blksize, (int)fdstat.st_blocks);
@@ -187,7 +193,7 @@ void logging_uninit()
 			free(logging_ctx->mutex);
 		}
 
-		if (logging_ctx->logging_file)
+		if (logging_ctx->logging_file && logging_ctx->close_file)
 		{
 			fclose(logging_ctx->logging_file);
 		}
@@ -208,6 +214,48 @@ void logging_set_verbose_level(verbose_level_t level)
 	}
 }
 
+static int logging_print_line_header(verbose_level_t level)
+{
+    struct timeval curr_time;
+    struct tm curr_tm;
+	int size = -1;
+	char *buffer = NULL;
+    static char info[][16] = {
+        {"[VERBOSE] "},
+        {"[DEBUG] "},
+        {"[TRACE] "},
+        {"[WARNING] "},
+        {"[ERROR] "}
+    };
+
+    gettimeofday(&curr_time, NULL);
+    localtime_r(&curr_time.tv_sec, &curr_tm);
+
+    pthread_mutex_lock(logging_ctx->mutex);
+    if (logging_ctx->verbose_level <= level)
+    {
+        buffer = (char *)bipbuf_reserve(logging_ctx->buf, LOG_MAX_LINESIZE, &size);
+        if (buffer != NULL && size > 0)
+        {
+            size = snprintf(buffer, size, "%04d-%02d-%02d %02d:%02d:%02d %06ld (0x%08lX) %s",
+                            curr_tm.tm_year + 1900, curr_tm.tm_mon + 1, curr_tm.tm_mday,
+                            curr_tm.tm_hour, curr_tm.tm_min, curr_tm.tm_sec,
+                            curr_time.tv_usec, pthread_self(), info[level]);
+            if (size > 0)
+            {
+                bipbuf_commit(logging_ctx->buf, size);                             
+            }
+            else
+            {
+                bipbuf_commit(logging_ctx->buf, 0);
+                size = -1;
+            }
+        }  
+	}
+	pthread_mutex_unlock(logging_ctx->mutex);
+    
+	return size;    
+}
 static int logging_vsprint(verbose_level_t level, const char *format, va_list args)
 {
 	int size = -1;
@@ -250,6 +298,7 @@ int logging(verbose_level_t level, const char *format, ...)
 	va_list args;
 
 	va_start(args, format);
+	logging_print_line_header(level);
 	ret = logging_vsprint(level, format, args);
 	va_end(args);
   
